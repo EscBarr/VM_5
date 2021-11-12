@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$USER_HOME$/Desktop/2 КУРС/VM_FINAL/Исходники/CPU.cpp" charset="windows-1251" />
+    <file url="file://$USER_HOME$/Desktop/2 КУРС/VM_FINAL/Исходники/Compare.cpp" charset="windows-1251" />
+    <file url="file://$USER_HOME$/Desktop/2 КУРС/VM_FINAL/Исходники/IO.cpp" charset="windows-1251" />
+    <file url="file://$USER_HOME$/Desktop/2 КУРС/VM_FINAL/Исходники/Mov.cpp" charset="windows-1251" />
+    <file url="file://$USER_HOME$/Desktop/2 КУРС/VM_FINAL/Исходники/iMath.h" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/commands/Bit_Operations.cpp" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/commands/Compare.cpp" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/commands/FMath.h" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/../VM_V/Jump.cpp" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/../VM_V/Jump.h" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/../копия флешки/VM_FINAL/Исходники/iMath.cpp" charset="windows-1251" />
+  </component>
+</project>
