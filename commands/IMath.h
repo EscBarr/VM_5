@@ -33,7 +33,6 @@ protected:
 
     void set_OF(CPU &Cpu, uint64_t result) noexcept;
 
-    void set_CF(CPU &Cpu, uint64_t result) noexcept;
 
 };
 

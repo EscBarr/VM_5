@@ -14,11 +14,15 @@ class MOV_reg_reg : public Command {
 };
 
 class MOV_reg_mem : public MOV_reg_reg {
-    void operator()(CPU &Cpu) noexcept override;
+  void operator()(CPU &Cpu) noexcept override;
 };
 
 class MOV_mem_reg : public MOV_reg_reg {
-    void operator()(CPU &Cpu) noexcept override;
+  void operator()(CPU &Cpu) noexcept override;
+};
+
+class MOV_adr_reg : public MOV_reg_reg {
+  void operator()(CPU &Cpu) noexcept override;
 };
 
 #endif //VM_5_MOV_H

@@ -9,28 +9,38 @@ void JumpDirect::operator()(CPU &Cpu) noexcept {
 }
 
 void JumpDirect::set_ip(CPU &Cpu) {
-    int8_t r1_temp = Cpu.cur_command.Cmd.r1;// по r1 тип перехода
-    switch (r1_temp) {
-        case 0://Прямой переход
-        {
-            Cpu.psw.set_IP(Cpu.cur_command.offset); // Для прямого перехода используется смещение в команде
-            break;
-        }
-        case 1:// Прямой косвенный
-        {
-            Cpu.psw.set_IP(
-                    Cpu.cur_command.Cmd.r2); // Для прямого косвенного перехода адрес находится во втором регистре команды
-            break;
-        }
-        case 2://относительный берем смещение из команды по r2 смотрим вперед или назад относительно текущего адреса
-        {
-            //r2 = 1 значит вычитаем из текущего адреса иначе прибавляем
-            address_t New_adr =
-                    Cpu.cur_command.Cmd.r2 == 1 ? Cpu.psw.get_IP() - Cpu.cur_command.offset : Cpu.psw.get_IP() +
-                                                                                              Cpu.cur_command.offset;
-            Cpu.psw.set_IP(New_adr);
-            break;
-        }
+  int8_t r1_temp = Cpu.cur_command.Cmd.r1;// по r1 тип перехода а по s прямой или относительный
+  switch (r1_temp) {
+	case 0://Безусловный прямой/относительный переход
+	{
+	  if (Cpu.cur_command.Cmd.s == 0) {
+		Cpu.psw.set_IP(Cpu.cur_command.offset); // Для прямого перехода используется смещение в команде
+	  } else {
+		address_t New_adr = Cpu.psw.get_IP() + Cpu.cur_command.offset;
+		Cpu.psw.set_IP(New_adr);
+	  }
+	  break;
+	}
+	case 1:// Безусловный косвенный/относительный
+	{
+	  Cpu.Check_reg(false);
+	  if (Cpu.cur_command.Cmd.s == 0) {
+		Cpu.psw.set_IP(Cpu.RCU.RCU_16[Cpu.cur_command.Cmd.r2].ui16); // Для прямого косвенного перехода адрес находится во втором регистре команды
+	  } else {
+		address_t New_adr = Cpu.psw.get_IP() + Cpu.RCU.RCU_16[Cpu.cur_command.Cmd.r2].ui16;
+		Cpu.psw.set_IP(New_adr);
+	  }
+	  break;
+	}
+	  /*   case 2://относительный берем смещение из команды по r2 смотрим вперед или назад относительно текущего адреса
+		 {
+			 //r2 = 1 значит вычитаем из текущего адреса иначе прибавляем
+			 address_t New_adr =
+					 Cpu.cur_command.Cmd.r2 == 1 ? Cpu.psw.get_IP() - Cpu.cur_command.offset : Cpu.psw.get_IP() +
+																							   Cpu.cur_command.offset;
+			 Cpu.psw.set_IP(New_adr);
+			 break;
+		 }*/
     }
 }
 
@@ -40,10 +50,6 @@ bool Coditional_jump::Equal(PSW Flags) {
 
 bool Coditional_jump::Lesser(PSW Flags) {
     return (Flags.get_SF() != Flags.get_OF());
-}
-
-bool Coditional_jump::Below(PSW Flags) {
-    return Flags.get_CF();
 }
 
 void Coditional_jump::operator()(CPU &Cpu) noexcept {
@@ -73,18 +79,6 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
             }
             break;
         }
-        case CPU::jmpA: {
-            if (!(Below(Cpu.psw) || Equal(Cpu.psw))) {
-                set_ip(Cpu);
-            }
-            break;
-        }
-        case CPU::jmpA_E: {
-            if (!Below(Cpu.psw) || Equal(Cpu.psw)) {
-                set_ip(Cpu);
-            }
-            break;
-        }
         case CPU::jmpL: {
             if (Lesser(Cpu.psw)) {
                 set_ip(Cpu);
@@ -93,18 +87,6 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
         }
         case CPU::jmpL_E: {
             if (Lesser(Cpu.psw) || Equal(Cpu.psw)) {
-                set_ip(Cpu);
-            }
-            break;
-        }
-        case CPU::jmpB: {
-            if (Below(Cpu.psw)) {
-                set_ip(Cpu);
-            }
-            break;
-        }
-        case CPU::jmpB_E: {
-            if (Below(Cpu.psw) || Equal(Cpu.psw)) {
                 set_ip(Cpu);
             }
             break;
@@ -133,5 +115,5 @@ void Call::operator()(CPU &Cpu) noexcept {
 }
 
 void Ret::operator()(CPU &Cpu) noexcept {
-    Cpu.psw.set_IP(Cpu.RCU.RCU_16.at(15).ui16);//В 8 регистре общего назначения лежит точка возврата
+  Cpu.psw.set_IP(Cpu.RCU.RCU_16.at(15).ui16);//В 16 регистре общего назначения лежит точка возврата
 }

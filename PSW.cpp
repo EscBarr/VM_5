@@ -3,24 +3,20 @@
 //
 #include "PSW.h"
 
-const address_t &PSW::get_IP() const {
-    return IP;
+address_t PSW::get_IP() {
+  return IP;
 }
 
-const uint16_t &PSW::get_ZF() const {
-    return ZF;
+uint16_t PSW::get_ZF() {
+  return ZF;
 }
 
-const uint16_t &PSW::get_SF() const {
-    return SF;
+uint16_t PSW::get_SF() {
+  return SF;
 }
 
-const uint16_t &PSW::get_OF() const {
-    return OF;
-}
-
-const uint16_t &PSW::get_CF() const {
-    return CF;
+uint16_t PSW::get_OF() {
+  return OF;
 }
 
 void PSW::set_IP(address_t Ip) {
@@ -39,7 +35,4 @@ void PSW::set_OF(uint16_t Of) {
     OF = Of;
 }
 
-void PSW::set_CF(uint16_t Cf) {
-    CF = Cf;
-}
 

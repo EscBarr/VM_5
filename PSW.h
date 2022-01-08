@@ -8,22 +8,20 @@
 #include "Types.h"
 
 class PSW {
-    address_t IP{0}; //Instruction Pointer
-    uint16_t ZF: 1;  //Флаг нуля
-    uint16_t SF: 1;  //Флаг знака
-    uint16_t OF: 1; //Флаг переполнения
-    uint16_t CF: 1; //Флаг переноса(остатка)
-public:
-    //==Геттеры==
-    const address_t &get_IP() const;
+  address_t IP{0}; //Instruction Pointer
+  uint16_t ZF: 1;  //Флаг нуля
+  uint16_t SF: 1;  //Флаг знака
+  uint16_t OF: 1; //Флаг переполнения
+ public:
+  //==Геттеры==
+  address_t get_IP();
 
-    const uint16_t &get_ZF() const;
+  uint16_t get_ZF();
 
-    const uint16_t &get_SF() const;
+  uint16_t get_SF();
 
-    const uint16_t &get_OF() const;
+  uint16_t get_OF();
 
-    const uint16_t &get_CF() const;
 
     //==Сеттеры==
     void set_IP(address_t Ip);
@@ -34,7 +32,6 @@ public:
 
     void set_OF(uint16_t OF);
 
-    void set_CF(uint16_t CF);
 };
 
 

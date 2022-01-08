@@ -3,13 +3,14 @@
 #include "../Commands.h"
 #include "../CPU.h"
 #include <functional>
+#include <utility>
 //=========================================================
 //================Вещественная арифметика=================
 
 class FloatArithmetic : public Command //Главный прототип команды с выставление флагов
 {
 public:
-    explicit FloatArithmetic(std::function<double(double, double)> operation) : run(operation) {}
+  explicit FloatArithmetic(std::function<double(double, double)> operation) : run(std::move(operation)) {}
 
     void operator()(CPU &Cpu) noexcept;
 
@@ -25,6 +26,7 @@ protected:
     void set_SF(CPU &Cpu, double result) noexcept;
 };
 
+/*
 class FAdd : public FloatArithmetic {
 public:
     double run(double left, double right) noexcept {
@@ -76,4 +78,4 @@ public:
         Cpu.RAM[Cpu.get_adr_r1()].data.f = result;
         change_flags(Cpu, result);
     }
-};
+};*/

@@ -21,7 +21,6 @@ class Coditional_jump : public JumpDirect {
 
     static bool Lesser(PSW Flags);
 
-    static bool Below(PSW Flags);//Для беззнаковых сравнений
 public:
     void operator()(CPU &Cpu) noexcept override;
 };

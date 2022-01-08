@@ -4,12 +4,12 @@
 
 #ifndef VM_5_MEMORY_H
 #define VM_5_MEMORY_H
-
+#include <vector>
 #include "Types.h"
-#include "vector"
+
 
 class Memory {
-    std::vector<mem_word_t> memory;
+  std::vector<word> memory;
 
 public:
     Memory();
@@ -24,7 +24,7 @@ public:
 
     Memory &operator=(const Memory &&) = delete;
 
-    mem_word_t &operator[](address_t address);
+  word &operator[](address_t address);
 };
 
 #endif //VM_5_MEMORY_H

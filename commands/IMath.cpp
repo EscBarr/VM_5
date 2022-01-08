@@ -28,13 +28,6 @@ void IntArithmetic::set_OF(CPU &Cpu, uint64_t result) noexcept {
     }
 }
 
-void IntArithmetic::set_CF(CPU &Cpu, uint64_t result) noexcept {                 //2^33 в 2
-    if (result & 0b100000000000000000000000000000000) {
-        Cpu.psw.set_CF(1);
-    } else {
-        Cpu.psw.set_CF(0);
-    }
-}
 
 void IntArithmetic::change_flags(CPU &Cpu, uint64_t result) noexcept {
     switch (Cpu.cur_command.Cmd.code) {
@@ -53,7 +46,6 @@ void IntArithmetic::change_flags(CPU &Cpu, uint64_t result) noexcept {
             set_ZF(Cpu, result);
             set_SF(Cpu, result);
             set_OF(Cpu, result);
-            set_CF(Cpu, result);
             break;
         }
     }
