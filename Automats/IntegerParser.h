@@ -5,14 +5,18 @@
 #pragma once
 #include "../HeadersExtensions.h"
 class IntegerParser {
-  enum {
+  enum State{
 	start,
 	s1,
 	s2,
 	s3,
 	error
   };
-  bool IsDecimal(std::string)
+  bool IsDecimalNum(std::string Num);
+  int ToNum(std::string Num);
+
+public:
+    bool InitializeNum(std::string Num,int &res);
 };
 
 

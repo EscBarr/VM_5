@@ -88,11 +88,12 @@ void CPU::Load_cmd()//лишнее копирование
   temp.d32[1] = RAM[psw.get_IP() + 1];
   cur_command.data = temp;
   if (cur_command.Cmd.s == 1) {
-	temp.d32[2] = RAM[psw.get_IP() + 2];
-	temp.d32[3] = RAM[psw.get_IP() + 3];
-	psw.set_IP(psw.get_IP() + 4);
-	cur_command.data = temp;
-  } else { psw.set_IP(psw.get_IP() + 2); }
+      temp.d32[2] = RAM[psw.get_IP() + 2];
+      temp.d32[3] = RAM[psw.get_IP() + 3];
+      //psw.set_IP(psw.get_IP() + 4);
+      cur_command.data = temp;
+  }
+//  } else { psw.set_IP(psw.get_IP() + 2); }
 }
 void CPU::start() {
   Load_cmd();

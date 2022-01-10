@@ -10,8 +10,10 @@ void Input::operator()(CPU &Cpu) noexcept {
     // Загружаем значение в память, по адресу на который указывает r1
     if (operand_size == 0) {
         std::cin >> Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).ui16;
+        Cpu.psw.set_IP(Cpu.psw.get_IP() + 2);
     } else {
         std::cin >> Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).u32;
+        Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
     }
 
 }
@@ -28,6 +30,7 @@ void Out::operator()(CPU &Cpu) noexcept {
             } else {
                 std::cout << Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).ui16;
             }
+            Cpu.psw.set_IP(Cpu.psw.get_IP() + 2);
             break;
         }
         case 1: {
@@ -45,6 +48,7 @@ void Out::operator()(CPU &Cpu) noexcept {
                     break;
                 }
             }
+            Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             break;
         }
         default: {

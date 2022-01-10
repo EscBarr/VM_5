@@ -10,6 +10,7 @@ void Compare::operator()(CPU &Cpu) noexcept//Целочисленное сравнение.
             IntArithmetic t([](int64_t a, int64_t b) { return (a - b); });
             t.operator()(Cpu);
             Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).ui16 = temp;//возвращаем исходное состояние
+            Cpu.psw.set_IP(Cpu.psw.get_IP() + 2);
             break;
         }
         default://длинная
@@ -18,6 +19,7 @@ void Compare::operator()(CPU &Cpu) noexcept//Целочисленное сравнение.
             IntArithmetic t([](int64_t a, int64_t b) { return (a - b); });
             t.operator()(Cpu);
             Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).u32 = temp;//возвращаем исходное состояние
+            Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             break;
         }
     }
@@ -28,4 +30,5 @@ void CompareF::operator()(CPU &Cpu) noexcept {
     FloatArithmetic t([](double a, double b) { return (a - b); });
     t.operator()(Cpu);
     Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).f = temp;//возвращаем исходное состояние
+    Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
 }

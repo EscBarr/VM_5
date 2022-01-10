@@ -60,6 +60,7 @@ void IntArithmetic::operator()(CPU &Cpu) noexcept {
                                   Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r2).ui16);
             change_flags(Cpu, result);
             Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).ui16 = result;
+            Cpu.psw.set_IP(Cpu.psw.get_IP() + 2);
             break;
         }
         default://длинная
@@ -67,6 +68,7 @@ void IntArithmetic::operator()(CPU &Cpu) noexcept {
                                   Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r2).u32);
             change_flags(Cpu, result);
             Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).u32 = result;
+            Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             break;
     }
 }

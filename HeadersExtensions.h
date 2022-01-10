@@ -2,8 +2,6 @@
 // Created by timur on 07.01.2022.
 //
 #pragma once
-#include "CPU.h"
-#include "Types.h"
 #include <sstream>
 #include <string>
 #include <fstream>
@@ -11,4 +9,27 @@
 #include <filesystem>
 #include <iostream>
 #include <unordered_map>
+#include "CPU.h"
+#include "Types.h"
 
+inline bool digit(char ch)
+{
+    std::string digits = "0123456789";
+    int d;
+    for(d = 0; d < 10; ++d)
+        if(ch == digits[d]) return true;
+        return false;              // символ - не цифра
+}
+
+inline std::vector<std::string> split(const std::string& s, char symb)
+
+{
+    std::vector<std::string> elems;
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, symb))
+    {
+        elems.push_back(item);
+    }
+    return elems;
+}

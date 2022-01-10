@@ -32,7 +32,7 @@ bool LoaderFromText::Display_All_txt() {
   for (size_t i = 0; i < All_txt_founded.size(); i++) {
 	std::cout << i + 1 << "." << All_txt_founded[i] << std::endl;
   }
-
+    return true;
 }
 bool LoaderFromText::Load(CPU &Cpu, int Num_File) {
   std::ifstream Program_list(All_txt_founded[Num_File - 1]);

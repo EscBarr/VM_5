@@ -4,6 +4,8 @@
 
 #pragma once
 #include "AssemblyTypes.h"
+#include "../Parsers/MathParser.h"
+#include "../Automats/FloatParser.h"
 class Assembly {
   std::unordered_map<std::string, std::tuple<int, int>>
 	  Commands = { // Команда асм, код операции в интерпретаторе и тип команды
@@ -40,22 +42,27 @@ class Assembly {
 	  {"call", std::tuple<int, int>(CPU::call, CommandList::call)},
 	  {"ret", std::tuple<int, int>(CPU::Return, CommandList::other)}
   };
+
   // 0,если не существует
-  std::unordered_map<std::string, uint16_t> RCU32 = {{"lr1", 1}, {"lr2", 2}, {"lr3", 3}, {"lr4", 4},
-													 {"lr5", 5}, {"lr6", 6}, {"lr7", 7}, {"lr8", 8}};
+  std::unordered_map<std::string, uint16_t> RCU16 = {{"r1", 0}, {"r2", 1}, {"r3", 2}, {"r4", 3},
+                                                     {"r5", 4}, {"r6", 5}, {"r7", 6}, {"r8", 7}, {"r9", 8}, {"r10", 9},
+                                                     {"r11", 10}, {"r12", 11}, {"r13", 12}, {"r14", 13}, {"r15", 14},
+                                                     {"r16", 15}};
+
   // 0,если не существует
-  std::unordered_map<std::string, uint16_t> RCU16 = {{"r1", 1}, {"r2", 2}, {"r3", 3}, {"r4", 4},
-													 {"r5", 5}, {"r6", 6}, {"r7", 7}, {"r8", 8}, {"r9", 9}, {"r10", 10},
-													 {"r11", 11}, {"r12", 12}, {"r13", 13}, {"r14", 14}, {"r15", 15},
-													 {"r16", 16}};
+  std::unordered_map<std::string, uint32_t> RCU32 = {{"lr1", 0}, {"lr2", 1}, {"lr3", 2}, {"lr4", 3},
+                                                     {"lr5", 4}, {"lr6", 5}, {"lr7", 6}, {"lr8", 7}};
   uint32_t globalAddress = 0; // Глобальный адрес для трансляции имен
   uint32_t startLabel = 0; // Адрес стартового входа в программу
   std::unordered_map<std::string, NameTableCell> NameTable; // Таблица имен
-  std::vector<word_t> TranslatorMemory; // Буфер трансляции программы
+  std::vector<word> TranslatorMemory; // Буфер трансляции программы
   std::vector<uint16_t> tableMovingName; // Таблица перемещающихся имен
+  std::string PathToDirectory;
   // Запись в буфер
-  void WriteMem(std::vector<word_t> value) {
-	for (int i = 0; i < value.size(); ++i) {
+  void WriteMem(std::vector<word> value)
+  {
+	for (int i = 0; i < value.size(); ++i)
+	{
 	  TranslatorMemory.push_back(value[i]);
 	  globalAddress++;
 	}
@@ -76,7 +83,11 @@ class Assembly {
   void Math(uint16_t code, std::string arguments);
   // Ввод-вывод
   void IO(uint16_t code, std::string str);
-  // Парсингш команды
+  // Сравнение
+  void Cmp(uint16_t code, std::string arguments);
+  // Вызов подпрограммы
+  void Call(uint16_t code, std::string arguments);
+  // Парсинг команды
   void ParseCommand(std::tuple<int, int> cmd, std::string arguments);
   // Первый проход
   void FirstTranslate(std::stringstream &istr);
@@ -84,8 +95,8 @@ class Assembly {
   void ParseCodeSection(std::stringstream &istr);
   // Первый проход в секции данных
   void ParseDataSection(std::stringstream &istr);
-  // Запись буфера в бинарнвй файл
-  void WriteBinFile(std::string filename);
+  // Запись буфера в бинарный/текстовый файл
+  void WriteBufferFile(std::string filename);
   // Парсинг одной записи(команды)
   void Parse(std::stringstream &istr);
  public:

@@ -34,5 +34,6 @@ void FloatArithmetic::operator()(CPU &Cpu) noexcept {
     double result = run(Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).f, Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r2).f);
     change_flags(Cpu, result);
     Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).f = result;
+    Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
 
 }
