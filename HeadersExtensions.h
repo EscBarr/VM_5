@@ -33,3 +33,12 @@ inline std::vector<std::string> split(const std::string& s, char symb)
     }
     return elems;
 }
+inline bool isNumber(std::string str)
+{
+    for (size_t i = 0; i < str.size(); i++)
+    {
+        if (str[i] > '9' || str[i] < '0')
+            return false;
+    }
+    return true;
+}

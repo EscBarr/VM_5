@@ -18,7 +18,7 @@
 class IntArithmetic : public Command //Главный прототип команды с выставлением флагов
 {
 public:
-    explicit IntArithmetic(std::function<int64_t(int64_t, int64_t)> operation) : run(std::move(operation)) {}
+    IntArithmetic(std::function<int64_t(int64_t, int64_t)> operation) : run(operation) {}
 
     void operator()(CPU &Cpu) noexcept;
 

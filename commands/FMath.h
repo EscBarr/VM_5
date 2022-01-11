@@ -7,10 +7,10 @@
 //=========================================================
 //================Вещественная арифметика=================
 
-class FloatArithmetic : public Command //Главный прототип команды с выставление флагов
+class FloatArithmetic : public Command //Главный прототип команды с выставлением флагов
 {
 public:
-  explicit FloatArithmetic(std::function<double(double, double)> operation) : run(std::move(operation)) {}
+  FloatArithmetic(std::function<double(double, double)> operation) : run(operation) {}
 
     void operator()(CPU &Cpu) noexcept;
 

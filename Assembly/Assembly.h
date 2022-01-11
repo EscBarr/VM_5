@@ -18,6 +18,7 @@ class Assembly {
 	  {"sub", std::tuple<int, int>(CPU::isub, CommandList::math)},
 	  {"mult", std::tuple<int, int>(CPU::imult, CommandList::math)},
 	  {"div", std::tuple<int, int>(CPU::idiv, CommandList::math)},
+	  {"mod", std::tuple<int, int>(CPU::imod, CommandList::math)},
 	  {"fadd", std::tuple<int, int>(CPU::fadd, CommandList::math)},
 	  {"fsub", std::tuple<int, int>(CPU::fsub, CommandList::math)},
 	  {"fmult", std::tuple<int, int>(CPU::fmul, CommandList::math)},
@@ -54,6 +55,8 @@ class Assembly {
                                                      {"lr5", 4}, {"lr6", 5}, {"lr7", 6}, {"lr8", 7}};
   uint32_t globalAddress = 0; // Глобальный адрес для трансляции имен
   uint32_t startLabel = 0; // Адрес стартового входа в программу
+  uint32_t CntrData = 0;
+  uint32_t CntrCode = 0;
   std::unordered_map<std::string, NameTableCell> NameTable; // Таблица имен
   std::vector<word> TranslatorMemory; // Буфер трансляции программы
   std::vector<uint16_t> tableMovingName; // Таблица перемещающихся имен
@@ -73,10 +76,14 @@ class Assembly {
   Operands Type(std::string str);
   // Парсинг операндов
   std::vector<std::string> ParseArguments(std::string str);
-  // Загрузка адреса
-  void Lea(uint16_t code, std::string arguments);
-  // Перемещение
-  void Move(uint16_t code, std::string arguments);
+  // Перемещение (Регистр - регистр)
+  void MoveRR(uint16_t code, std::string arguments);
+  // Перемещение (Регистр - память)
+  void MoveRM(uint16_t code, std::string arguments);
+  // Перемещение (Регистр - память)
+  void MoveMR(uint16_t code, std::string arguments);
+  // Перемещение (Загрузка адреса в регистр)
+  void MoveАR(uint16_t code, std::string arguments);
   // Переходы
   void Jump(uint16_t code, std::string arguments);
   //Арифметика
@@ -99,6 +106,12 @@ class Assembly {
   void WriteBufferFile(std::string filename);
   // Парсинг одной записи(команды)
   void Parse(std::stringstream &istr);
+  //Проверка являются ли операнды одним типом
+  bool Check_Operands(std::vector<std::string> args);
+  //Проверка размера регистров
+  bool Check_RegSize( std::vector<std::string> args);
+  //Проверка размера регистра
+  bool Check_RegSizeSingle( std::vector<std::string> args);
  public:
   // Трансляция програмы
   void Translate(std::string filename);

@@ -17,7 +17,7 @@ class CPU final {
  public:
   Command_register cur_command;//Текущая выполняемая команда
   PSW psw; // PSW-IP + FLAGS
-  Memory RAM;// Память
+  class Memory RAM;// Память
   registers RCU;// Регистры общего назначения
   CPU();
 
@@ -43,11 +43,11 @@ class CPU final {
 	///
 	///
 	///
-	iadd,//4 сложение
-	isub,//5 вычитание
-	imult,//6 умножение
-	idiv,//7 деление
-	imod,//8 деление с остатком
+	iadd,//5 сложение
+	isub,//6 вычитание
+	imult,//7 умножение
+	idiv,//8 деление
+	imod,//9 деление с остатком
 	///
 	///
         ///

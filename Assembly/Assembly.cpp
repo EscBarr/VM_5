@@ -33,7 +33,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
             if (!tempStr.empty())
                 tempDataArray.push_back(tempStr);
         }
-        if (tempDataArray.size() != 3)
+        if (tempDataArray.size() == 3)
         {
             if (Type(tempDataArray[0]) != Operands::var)
                 throw std::logic_error(tempDataArray[0] + " неверный формат имени переменной");
@@ -52,6 +52,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
                     data.ui16 = tempResult;
                     variable.Val16 = data;
                     globalAddress += 2;
+                    CntrData += 2;
                 }
                 else
                     throw std::logic_error(tempDataArray[2] + " Нераспознанное значение");
@@ -66,6 +67,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
                     data.u32 = tempResult;
                     variable.Val32 = data;
                     globalAddress += 4;
+                    CntrData += 4;
                 }
                 else
                     throw std::logic_error(tempDataArray[2] + " Нераспознанное значение");
@@ -77,6 +79,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
                 data.f = atof(tempDataArray[2].c_str());
                 variable.Val32 = data;
                 globalAddress += 4;
+                CntrData += 4;
             }
 
             NameTable.insert(std::make_pair(tempDataArray[0], variable)); // Добавить метку в таблицу имен
@@ -93,9 +96,13 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
 
 Operands Assembly::Type(std::string str) {
     std::string action = "+-/*";
-    if (RCU16.find(str) != RCU16.end() || RCU32.find(str) != RCU32.end())
+    if (RCU16.find(str) != RCU16.end())
     {
         return Operands::reg;
+    }
+    if (RCU32.find(str) != RCU32.end())
+    {
+        return Operands::lreg;
     }
     // Косвенное обращение [Регистр + смещение]
     if (str.find('[') != std::string::npos and str.find(']') != std::string::npos)
@@ -147,7 +154,7 @@ Operands Assembly::Type(std::string str) {
             return Operands::cnst;
         }
     }
-    // Константа
+    // Числовая константа
     int resTemp;
     IntegerParser intPar;
     if (intPar.InitializeNum(str, resTemp))
@@ -188,15 +195,6 @@ void Assembly::ParseCodeSection(std::stringstream &istr) {
             }
         else
         {
-            if (str == "main") // Точка входа в программу
-                {
-                if(isstartLabel)
-                    throw std::logic_error("стартовая метка уже объявлена");
-                istr >> nameStartLabel;
-                isstartLabel = true;
-                }
-            else
-            {
                 int indexEndLabel = str.find(':'); // Метка
                 if (indexEndLabel != std::string::npos) // Добавление метки в таблицу имен
                     {
@@ -215,25 +213,35 @@ void Assembly::ParseCodeSection(std::stringstream &istr) {
                     for (size_t i = 0; i < args.size(); i++)
                     {
                         int typeOp = Type(args[i]);
-                        if (typeOp == Operands::indirect || typeOp == Operands::var || typeOp == Operands::cnst)// Типы операндов, которые занимают дополнительную ячейку памяти ВМ
+                        if (typeOp == Operands::lreg || typeOp == Operands::var || typeOp == Operands::cnst)// Типы операндов, которые занимают дополнительную ячейку памяти ВМ
                             {
-                            globalAddress++;
+                            CntrCode +=2;
+                            globalAddress+=2;
                             break; // В команде не может быть более 1 адреса
                             }
                     }
-                    globalAddress++;
+                    CntrCode +=2;
+                    globalAddress+=2;
                 }
-            }
         }
         istr >> str;
     }
-    if(!isstartLabel) throw std::logic_error("Стартовая метка не найдена");
-    if (NameTable.find(nameStartLabel) != NameTable.end())
+    if(NameTable.find("main") == NameTable.end())
     {
-        if (NameTable[nameStartLabel].Op_Type != 0) throw std::logic_error(nameStartLabel + "не является меткой");
-        startLabel = NameTable[nameStartLabel].Address;
+        throw std::logic_error("Стартовая метка не найдена");
     }
-    else throw std::logic_error("Метка " + nameStartLabel + " не определена");
+    else if(NameTable["main"].Op_Type != 0)
+    {
+        throw std::logic_error("Стартовая метка не найдена");
+    }
+    startLabel = NameTable["main"].Address;
+//    if(!isstartLabel) throw std::logic_error("Стартовая метка не найдена");
+//    if (NameTable.find(nameStartLabel) != NameTable.end())
+//    {
+//        if (NameTable[nameStartLabel].Op_Type != 0) throw std::logic_error(nameStartLabel + "не является меткой");
+//        startLabel = NameTable[nameStartLabel].Address;
+//    }
+//    else throw std::logic_error("Метка " + nameStartLabel + " не определена");
 
 }
 
@@ -242,11 +250,19 @@ void Assembly::ParseCommand(std::tuple<int, int> cmd, std::string arguments) {
     {
         case CommandList::move_reg_reg:
         {
-            Move(std::get<0>(cmd), arguments); break;
+            MoveRR(std::get<0>(cmd), arguments); break;
         }
-        case CommandList::lea:
+        case CommandList::move_reg_mem:
         {
-            Lea(std::get<0>(cmd), arguments); break;
+            MoveRM(std::get<0>(cmd), arguments); break;
+        }
+        case CommandList::move_mem_reg:
+        {
+            MoveMR(std::get<0>(cmd), arguments); break;
+        }
+        case CommandList::move_adr_reg:
+        {
+            MoveАR(std::get<0>(cmd), arguments); break;
         }
         case CommandList::jmp:
         {
@@ -272,12 +288,16 @@ void Assembly::ParseCommand(std::tuple<int, int> cmd, std::string arguments) {
         }
         case CommandList::other:
         {
-            base_short_command temp;
-            temp.r1 = 15;
-            temp.s = 0;
-            temp.code = CPU::Return;
-
-            WriteMem(temp);
+            Command_register temp;
+            temp.Cmd.r1 = 15;
+            temp.Cmd.s = 0;
+            temp.Cmd.code = CPU::Return;
+            std::vector<word> value;
+            for (int i = 0; i < 2; ++i)
+            {
+                value.push_back(temp.data.d32[i]);
+            }
+            WriteMem(value);
             break;
         }
         default:
@@ -292,6 +312,7 @@ void Assembly::FirstTranslate(std::stringstream &istr) {
     bool codeSection = false;
     std::string str;
     istr >> str;
+    str.c_str();
     while (!istr.eof())
     {
         RemoveComment(str);
@@ -319,7 +340,7 @@ void Assembly::FirstTranslate(std::stringstream &istr) {
     if(!codeSection) throw std::logic_error("Отсутствует секция кода");
 
 }
-
+// Парсинг одной записи(команды)
 void Assembly::Parse(std::stringstream &istr)
 {
     std::string str;
@@ -336,7 +357,7 @@ void Assembly::Parse(std::stringstream &istr)
             {
             std::getline(istr, str, '\n');
             }
-        else if (str == "start")
+        else if (str == "main")
         {
             istr >> str;
         }
@@ -360,13 +381,19 @@ void Assembly::Parse(std::stringstream &istr)
             }
         istr >> str;
         }
-    WriteBufferFile(PathToDirectory + "testbin.bin"); // Запись в бинарный файл
+    WriteBufferFile(PathToDirectory + "test1.vm5"); // Запись в бинарный файл
 
 }
 
 void Assembly::WriteBufferFile(std::string filename) {
     // Адрес таблицы tableMovingName = Данные(по 2/4 байта) + код(по 2 байта)
     uint32_t countData{0};
+    std::vector<NameTableCell> correctData;
+    for (auto el: NameTable)
+    {
+        if(el.second.Op_Type != 0)
+            correctData.push_back(el.second);
+    }
 
     for (std::pair<std::string, NameTableCell> elem : NameTable)
     {
@@ -384,17 +411,20 @@ void Assembly::WriteBufferFile(std::string filename) {
     file.write((char*)&movingTable, sizeof(movingTable));
     file.write((char*)&countData, sizeof(countData));
     file.write((char*)&startLabel, sizeof(startLabel)); // Стартовое IP
+    std::sort(correctData.begin(), correctData.end(), [](const NameTableCell& lhs, const NameTableCell rhs) {
+        return lhs.Address < rhs.Address;
+    });
 
-    for (std::pair<std::string, NameTableCell> elem : NameTable) // Запись данных
+    for (auto elem : correctData) // Запись данных
         {
-        if (elem.second.Op_Type != 0)
+        if (elem.Op_Type != 0)
         {
-            if (elem.second.Op_Type == DataType::Int16)
+            if (elem.Op_Type == DataType::Int16)
             {
-                file.write((char*)&elem.second.Val16, sizeof(elem.second.Val16.ui16));
+                file.write((char*)&elem.Val16, sizeof(elem.Val16.ui16));
             } else
             {
-                file.write((char*)&elem.second.Val32, sizeof(elem.second.Val32.u32));
+                file.write((char*)&elem.Val32, sizeof(elem.Val32.u32));
             }
         }
         }
@@ -410,24 +440,144 @@ void Assembly::WriteBufferFile(std::string filename) {
 
 }
 
-void Assembly::Lea(uint16_t code, std::string arguments)
-{
-
-}
-
-void Assembly::Move(uint16_t code, std::string arguments) {
-
-}
 
 void Assembly::Jump(uint16_t code, std::string arguments) {
 
 }
+//Проверка размера регистров
+bool Assembly::Check_RegSize( std::vector<std::string> args)
+{
+    bool Flag_LongReg = false;
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        if (Type(args[i]) != Operands::reg) Flag_LongReg = true;
+    }
+    if (Flag_LongReg)//работа с 32 битными регистрами
+        {
+        for (size_t i = 0; i < args.size(); i++)
+        {
+            if (Type(args[i]) != Operands::lreg) throw std::logic_error("Арифметические команды возможны только на регистрах");;
+        }
+        }
+    return Flag_LongReg;
+}
 
-void Assembly::Math(uint16_t code, std::string arguments) {
+void Assembly::Math(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    Check_Operands(args);//проверка одного ли типа регистры 16 - 16 или 32- 32
+    bool Flag_LongReg = Check_RegSize(args); //если в команде встречены не короткие регистры
+    if (code != CPU::Bitwise_NOT)
+    {
+        if (args.size() != 2) throw std::logic_error("Ожидалось 2 аргумента");
+
+        if (Flag_LongReg)//работа с 32 битными регистрами
+        {
+            Command_register temp;
+            temp.Cmd.r1 = RCU32[args[0]];
+            temp.Cmd.r2 = RCU32[args[1]];
+            temp.Cmd.s = 1;
+            temp.Cmd.code = code;
+            temp.offset = 0;
+            std::vector<word> value;
+            for (int i = 0; i < 4; ++i)
+            {
+                value.push_back(temp.data.d32[i]);
+            }
+            WriteMem(value);
+        }
+        else//работа с 16 битными регистрами
+        {
+            Command_register temp;
+            temp.Cmd.r1 = RCU16[args[0]];
+            temp.Cmd.r2 = RCU16[args[1]];
+            temp.Cmd.s = 0;
+            temp.Cmd.code = code;
+            std::vector<word> value;
+            for (int i = 0; i < 2; ++i)
+            {
+                value.push_back(temp.data.d32[i]);
+            }
+            WriteMem(value);
+        }
+    }
+    else
+    {
+        if (args.size() < 1) throw std::logic_error("Ожидалось не менее 1 аргумента");
+        if (Flag_LongReg)//работа с 32 битными регистрами
+            {
+            Command_register temp;
+            temp.Cmd.r1 = RCU32[args[0]];
+            temp.Cmd.r2 = 0;
+            temp.Cmd.s = 1;
+            temp.Cmd.code = code;
+            temp.offset = 0;
+            std::vector<word> value;
+            for (int i = 0; i < 4; ++i)
+            {
+                value.push_back(temp.data.d32[i]);
+            }
+            WriteMem(value);
+
+            }
+        else
+        {
+            Command_register temp;
+            temp.Cmd.r1 = RCU16[args[0]];
+            temp.Cmd.r2 = 0;
+            temp.Cmd.s = 0;
+            temp.Cmd.code = code;
+            std::vector<word> value;
+            for (int i = 0; i < 2; ++i)
+            {
+                value.push_back(temp.data.d32[i]);
+            }
+            WriteMem(value);
+        }
+    }
 
 }
 
-void Assembly::IO(uint16_t code, std::string str) {
+void Assembly::IO(uint16_t code, std::string str)
+{
+    std::vector<std::string> args = ParseArguments(str);
+    if(args.size() != 2) throw std::logic_error("Ожидалось 2 аргумента");
+    bool Flag_LongReg = false;
+    if (Type(args[0]) != Operands::reg )
+    {
+        if(Type(args[0]) != Operands::lreg)
+        {
+            throw std::logic_error(args[0] + " ожидался регистр");
+        }
+        else
+        {
+            Flag_LongReg = true;
+        }
+    }
+
+    if (Type(args[1]) != Operands::special) throw std::logic_error(args[1] + " Ожидалась конструкция #");
+    int digitParam {0};
+    if (isNumber(args[1].substr(1)))
+    {
+        int digitParam = std::atoi(args[1].substr(1).c_str());
+        if (digitParam < 0 && digitParam > 2)
+            throw std::logic_error(args[1] + " Ожидалась конструкция #<0..2>");
+    }
+    else
+        throw std::logic_error(args[1] + " Ожидалась конструкция #<0..2>");
+    Command_register temp{};
+    temp.Cmd.r1 = RCU16[args[0]];
+    temp.Cmd.r2 = digitParam;
+    temp.Cmd.s = !Flag_LongReg ? 0 : 1;
+    temp.Cmd.code = code;
+    std::vector<word> value;
+    int size = 2;
+    if (Flag_LongReg) size = 4;
+    for (int i = 0; i < size; ++i)
+    {
+        value.push_back(temp.data.d32[i]);
+    }
+    WriteMem(value);
 
 }
 
@@ -440,5 +590,93 @@ void Assembly::Call(uint16_t code, std::string arguments) {
 }
 
 void Assembly::Translate(std::string filename) {
+    std::ifstream file;
+    file.open(filename);
+    if (!file.is_open())
+    {
+        std::cout << "File [ isn't open ]\n";
+        return;
+    }
+    std::stringstream istr;
+    istr << file.rdbuf();
+    FirstTranslate(istr);
+    file.seekg(0);
+    istr.clear();
+    istr << file.rdbuf();
+    globalAddress = CntrData + CntrCode;
+    Parse(istr);
 
+}
+
+bool Assembly::Check_Operands(std::vector<std::string> args) {
+    Operands Temp = Type(args[0]);
+    for (size_t i = 1; i < args.size(); i++)
+    {
+        if (Type(args[i]) != Temp)
+        {
+            throw std::logic_error("Команда должна выполняться на регистрах одного типа");
+        }
+    }
+    return true;
+}
+
+void Assembly::MoveRR(uint16_t code, std::string arguments) {
+
+}
+
+void Assembly::MoveRM(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    if(args.size() != 2)
+        throw std::logic_error("Ожидалось 2 аргумента");
+    bool Flag_LongReg = Check_RegSizeSingle(args); //если в команде встречены не короткие регистры
+    Command_register temp{};
+    if (NameTable.find(args[1]) == NameTable.end())
+        throw std::logic_error(args[1] + " не определена");
+    if (Flag_LongReg)
+    {
+      temp.Cmd.code = code;
+      temp.Cmd.s = 1;
+      temp.Cmd.r1 = RCU32[args[0]];
+      temp.Cmd.r2 = 0;
+      temp.offset = NameTable[args[1]].Address;
+    }
+    else
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 0;
+        temp.Cmd.r1 = RCU16[args[0]];
+        temp.Cmd.r2 = 0;
+        temp.offset = NameTable[args[1]].Address;
+    }
+    std::vector<word> value;
+    for (int i = 0; i < 4; ++i)//Команда всегда 32 битная
+    {
+        value.push_back(temp.data.d32[i]);
+    }
+    WriteMem(value);
+
+}
+
+void Assembly::MoveMR(uint16_t code, std::string arguments) {
+
+}
+
+void Assembly::MoveАR(uint16_t code, std::string arguments) {
+
+}
+
+bool Assembly::Check_RegSizeSingle(std::vector<std::string> args) {
+    bool Flag_LongReg = false;
+
+        if (Type(args[0]) != Operands::reg) Flag_LongReg = true;
+        if(Flag_LongReg)
+        {
+            if (Type(args[0]) != Operands::lreg)
+            {
+                throw std::logic_error("Для данной команды первый операнд должен быть регистром");
+            }
+        }
+
+    return Flag_LongReg;
 }

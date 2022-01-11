@@ -28,6 +28,7 @@ void CPU::Initialize_Comands() {
   commands[mov_reg_reg] = new class MOV_reg_reg();
   commands[mov_reg_mem] = new class MOV_reg_mem();
     commands[mov_mem_reg] = new class MOV_mem_reg();
+    commands[mov_adr_reg] = new class MOV_adr_reg();
     //==Команды целой арифметики==//
     commands[iadd] = new class IntArithmetic([](int64_t a, int64_t b) { return (a + b); });
     commands[isub] = new class IntArithmetic([](int64_t a, int64_t b) { return (a - b); });
@@ -36,16 +37,16 @@ void CPU::Initialize_Comands() {
     commands[imod] = new class IntArithmetic([](int64_t a, int64_t b) { return (a % b); });
     //==Битовые операции==//
     commands[Bitwise_AND] = new class Bitwise_op([](int64_t a, int64_t b) { return (a & b); });
-    commands[Bitwise_OR] = new class Bitwise_op([](int64_t a, int64_t b) { return (a || b); });
+    commands[Bitwise_OR] = new class Bitwise_op([](int64_t a, int64_t b) { return (a | b); });
     commands[Bitwise_XOR] = new class Bitwise_op([](int64_t a, int64_t b) { return (a ^ b); });
     commands[Bitwise_NOT] = new class Bitwise_op([](int64_t a, int64_t b) { return (~a); });
     commands[Bitwise_LEFT] = new class Bitwise_op([](int64_t a, int64_t b) { return (a << b); });
     commands[Bitwise_RIGHT] = new class Bitwise_op([](int64_t a, int64_t b) { return (a >> b); });
     //==Команды дробной арифметики==//
     commands[fadd] = new class FloatArithmetic([](double a, double b) { return (a + b); });
-    commands[fsub] = new class FloatArithmetic([](double a, double b) { return (a + b); });
-    commands[fmul] = new class FloatArithmetic([](double a, double b) { return (a + b); });
-    commands[fdiv] = new class FloatArithmetic([](double a, double b) { return (a + b); });
+    commands[fsub] = new class FloatArithmetic([](double a, double b) { return (a - b); });
+    commands[fmul] = new class FloatArithmetic([](double a, double b) { return (a * b); });
+    commands[fdiv] = new class FloatArithmetic([](double a, double b) { return (a / b); });
     //==Команды Сравнения==//
     commands[cmp] = new class Compare();
     commands[cmpF] = new class CompareF();
@@ -87,7 +88,7 @@ void CPU::Load_cmd()//лишнее копирование
   temp.d32[0] = RAM[psw.get_IP()];
   temp.d32[1] = RAM[psw.get_IP() + 1];
   cur_command.data = temp;
-  if (cur_command.Cmd.s == 1) {
+  if (cur_command.Cmd.s == 1 || cur_command.Cmd.code == CPU::mov_reg_reg || cur_command.Cmd.code == CPU::mov_reg_mem || cur_command.Cmd.code == CPU::mov_mem_reg || cur_command.Cmd.code == CPU::mov_adr_reg) {
       temp.d32[2] = RAM[psw.get_IP() + 2];
       temp.d32[3] = RAM[psw.get_IP() + 3];
       //psw.set_IP(psw.get_IP() + 4);

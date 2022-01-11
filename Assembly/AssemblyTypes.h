@@ -19,6 +19,7 @@ enum CommandList {
 enum Operands {
   cnst,
   reg,
+  lreg,
   var,
   indirect,
   special,
