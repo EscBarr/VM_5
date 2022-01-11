@@ -70,7 +70,7 @@ class Assembly {
 	}
   }
   //Запись перемещающегося имени
-  void AddMovingName(size_t address) { tableMovingName.push_back(address); }
+  void AddMovingName(uint16_t address) { tableMovingName.push_back(address); }
   //Тип операнда
   Operands Type(std::string str);
   // Парсинг операндов
@@ -112,7 +112,7 @@ class Assembly {
   //Проверка размера регистра
   bool Check_RegSizeSingle( std::vector<std::string> args,bool first_second);
  public:
-  // Трансляция програмы
+  // Трансляция программы
   void Translate(std::string filename);
   Assembly() {}
   ~Assembly() {}

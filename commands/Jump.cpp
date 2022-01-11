@@ -59,11 +59,19 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
             if (Equal(Cpu.psw)) {
                 set_ip(Cpu);
             }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
+            }
             break;
         }
         case CPU::jmpNE: {
             if (!Equal(Cpu.psw)) {
                 set_ip(Cpu);
+            }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             }
             break;
         }
@@ -71,11 +79,19 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
             if (!(Lesser(Cpu.psw) || Equal(Cpu.psw))) {
                 set_ip(Cpu);
             }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
+            }
             break;
         }
         case CPU::jmpG_E: {
             if (!Lesser(Cpu.psw) || Equal(Cpu.psw)) {
                 set_ip(Cpu);
+            }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             }
             break;
         }
@@ -83,11 +99,19 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
             if (Lesser(Cpu.psw)) {
                 set_ip(Cpu);
             }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
+            }
             break;
         }
         case CPU::jmpL_E: {
             if (Lesser(Cpu.psw) || Equal(Cpu.psw)) {
                 set_ip(Cpu);
+            }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             }
             break;
         }
@@ -95,11 +119,19 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
             if (Cpu.psw.get_SF()) {
                 set_ip(Cpu);
             }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
+            }
             break;
         }
         case CPU::jmpNsf: {
             if (!(Cpu.psw.get_SF())) {
                 set_ip(Cpu);
+            }
+            else
+            {
+                Cpu.psw.set_IP(Cpu.psw.get_IP() + 4);
             }
             break;
         }

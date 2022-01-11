@@ -88,7 +88,7 @@ void CPU::Load_cmd()//лишнее копирование
   temp.d32[0] = RAM[psw.get_IP()];
   temp.d32[1] = RAM[psw.get_IP() + 1];
   cur_command.data = temp;
-  if (cur_command.Cmd.s == 1  || cur_command.Cmd.code == CPU::mov_reg_mem || cur_command.Cmd.code == CPU::mov_mem_reg || cur_command.Cmd.code == CPU::mov_adr_reg) {
+  if (cur_command.Cmd.s == 1  || (cur_command.Cmd.code >= CPU::jmp && cur_command.Cmd.code <= CPU::jmpNsf) || cur_command.Cmd.code == CPU::mov_reg_mem || cur_command.Cmd.code == CPU::mov_mem_reg || cur_command.Cmd.code == CPU::mov_adr_reg) {
       temp.d32[2] = RAM[psw.get_IP() + 2];
       temp.d32[3] = RAM[psw.get_IP() + 3];
       //psw.set_IP(psw.get_IP() + 4);

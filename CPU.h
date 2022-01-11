@@ -39,7 +39,7 @@ class CPU final {
 	mov_reg_reg, //1 пересылка регистр-регистр
 	mov_reg_mem,//2 пересылка регистр-память
 	mov_mem_reg,//3 пересылка память-регистр
-	mov_adr_reg,
+	mov_adr_reg,//4
 	///
 	///
 	///
@@ -51,8 +51,8 @@ class CPU final {
 	///
 	///
         ///
-        fadd,//9
-        fsub,//10
+        fadd,//10
+        fsub,//11
         fmul,//12
         fdiv,//13
         ///
