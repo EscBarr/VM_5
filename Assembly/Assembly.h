@@ -8,7 +8,7 @@
 #include "../Automats/FloatParser.h"
 class Assembly {
   std::unordered_map<std::string, std::tuple<int, int>>
-	  Commands = { // Команда асм, код операции в интерпретаторе и тип команды
+	  Commands = { // Команда ассемблера, код операции в интерпретаторе и тип команды по аргументам
 	  {"movRR", std::tuple<int, int>(CPU::mov_reg_reg, CommandList::move_reg_reg)},
 	  {"movRM", std::tuple<int, int>(CPU::mov_reg_mem, CommandList::move_reg_mem)},
 	  {"movMR", std::tuple<int, int>(CPU::mov_mem_reg, CommandList::move_mem_reg)},
@@ -52,12 +52,12 @@ class Assembly {
   // 0,если не существует
   std::unordered_map<std::string, uint32_t> RCU32 = {{"lr1", 0}, {"lr2", 1}, {"lr3", 2}, {"lr4", 3},
                                                      {"lr5", 4}, {"lr6", 5}, {"lr7", 6}, {"lr8", 7}};
-  uint32_t globalAddress = 0; // Глобальный адрес для трансляции имен
-  uint32_t startLabel = 0; // Адрес стартового входа в программу
-  uint32_t CntrData = 0;
-  uint32_t CntrCode = 0;
-  std::unordered_map<std::string, NameTableCell> NameTable; // Таблица имен
-  std::vector<word> TranslatorMemory; // Буфер трансляции программы
+  uint32_t globalAddress = 0; // Глобальный счетчик адреса для трансляции имен
+  uint32_t startLabel = 0; // Адрес начала трансляции команд для интерпретатора
+  uint32_t CntrData = 0;//Счетчик байт для секции данных
+  uint32_t CntrCode = 0;//Счетчик байт для секции кода
+  std::unordered_map<std::string, NameTableCell> Table_Of_Names; // Таблица имен названия переменных
+  std::vector<word> InterpreterMemory; // Буфер трансляции команд программы в интерпретатор
   std::vector<uint16_t> tableMovingName; // Таблица перемещающихся имен
   std::string PathToDirectory;
   // Запись в буфер
@@ -65,7 +65,7 @@ class Assembly {
   {
 	for (int i = 0; i < value.size(); ++i)
 	{
-	  TranslatorMemory.push_back(value[i]);
+	  InterpreterMemory.push_back(value[i]);
 	  globalAddress++;
 	}
   }
@@ -93,10 +93,10 @@ class Assembly {
   void Cmp(uint16_t code, std::string arguments);
   // Вызов подпрограммы
   void Call(uint16_t code, std::string arguments);
-  // Парсинг команды
+  // Вычленение типа команды и вызов соответствующей функции для записи в буфер памяти команд
   void ParseCommand(std::tuple<int, int> cmd, std::string arguments);
   // Первый проход
-  void FirstTranslate(std::stringstream &istr);
+  void FirstPass(std::stringstream &istr);
   // Первый проход секции кода
   void ParseCodeSection(std::stringstream &istr);
   // Первый проход в секции данных
@@ -104,7 +104,7 @@ class Assembly {
   // Запись буфера в бинарный/текстовый файл
   void WriteBufferFile(std::string filename);
   // Парсинг одной записи(команды)
-  void Parse(std::stringstream &istr);
+  void SecondPass(std::stringstream &istr);
   //Проверка являются ли операнды одним типом
   bool Check_Operands(std::vector<std::string> args);
   //Проверка размера регистров

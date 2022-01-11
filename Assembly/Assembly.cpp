@@ -37,7 +37,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
         {
             if (Type(tempDataArray[0]) != Operands::label)
                 throw std::logic_error(tempDataArray[0] + " неверный формат имени переменной");
-            if (NameTable.find(tempDataArray[0]) != NameTable.end())
+            if (Table_Of_Names.find(tempDataArray[0]) != Table_Of_Names.end())
                 throw std::logic_error(tempDataArray[0] + " уже определена");
             if (type.find(tempDataArray[1]) == type.end())
                 throw std::logic_error("Нераспознанный тип");
@@ -82,7 +82,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
                 CntrData += 4;
             }
 
-            NameTable.insert(std::make_pair(tempDataArray[0], variable)); // Добавить метку в таблицу имен
+            Table_Of_Names.insert(std::make_pair(tempDataArray[0], variable)); // Добавить метку в таблицу имен
         }
         else
             throw std::logic_error("Ожидалось минимум 3 аргумента");
@@ -169,7 +169,7 @@ Operands Assembly::Type(std::string str) {
         if (!isalpha(str[i]) && !isdigit(str[i]) && str[i] != '_')
             variable = false;
     }
-    //if (NameTable.find(str) == NameTable.end()) // Проверка присутствует ли такая переменная
+    //if (Table_Of_Names.find(str) == Table_Of_Names.end()) // Проверка присутствует ли такая переменная
     if (variable) return label;
     if(str.find('@') != std::string::npos) return modeinout;
     throw std::logic_error( str + " Неизвестный тип аргумента");
@@ -200,9 +200,9 @@ void Assembly::ParseCodeSection(std::stringstream &istr) {
                     {
                     str = str.substr(0, indexEndLabel);
                     NameTableCell label = { 0,static_cast<uint16_t>(globalAddress) };
-                    if (NameTable.find(str) != NameTable.end())
+                    if (Table_Of_Names.find(str) != Table_Of_Names.end())
                         throw std::logic_error(str + "метка с таким именем уже определена");
-                    NameTable.insert(std::make_pair(str, label));
+                    Table_Of_Names.insert(std::make_pair(str, label));
                     }
                 else // Если текущая строка содержит код,считать адрес
                 {
@@ -226,15 +226,15 @@ void Assembly::ParseCodeSection(std::stringstream &istr) {
         }
         istr >> str;
     }
-    if(NameTable.find("main") == NameTable.end())
+    if(Table_Of_Names.find("main") == Table_Of_Names.end())
     {
         throw std::logic_error("Стартовая метка не найдена");
     }
-    else if(NameTable["main"].Op_Type != 0)
+    else if(Table_Of_Names["main"].Op_Type != 0)
     {
         throw std::logic_error("Стартовая метка не найдена");
     }
-    startLabel = NameTable["main"].Address;
+    startLabel = Table_Of_Names["main"].Address;
 
 }
 
@@ -300,7 +300,7 @@ void Assembly::ParseCommand(std::tuple<int, int> cmd, std::string arguments) {
 
 }
 
-void Assembly::FirstTranslate(std::stringstream &istr) {
+void Assembly::FirstPass(std::stringstream &istr) {
     bool dataSection = false;
     bool codeSection = false;
     std::string str;
@@ -334,7 +334,7 @@ void Assembly::FirstTranslate(std::stringstream &istr) {
 
 }
 // Парсинг одной записи(команды)
-void Assembly::Parse(std::stringstream &istr)
+void Assembly::SecondPass(std::stringstream &istr)
 {
     std::string str;
     do
@@ -382,20 +382,20 @@ void Assembly::WriteBufferFile(std::string filename) {
     // Адрес таблицы tableMovingName = Данные(по 2/4 байта) + код(по 2 байта)
     uint32_t countData{0};
     std::vector<NameTableCell> correctData;
-    for (auto el: NameTable)
+    for (auto el: Table_Of_Names)
     {
         if(el.second.Op_Type != 0)
             correctData.push_back(el.second);
     }
 
-    for (std::pair<std::string, NameTableCell> elem : NameTable)
+    for (std::pair<std::string, NameTableCell> elem : Table_Of_Names)
     {
         if (elem.second.Op_Type != 0)
         {
             elem.second.Op_Type == DataType::Int16 ? countData += 2 : countData += 4;
         }
     }
-    uint32_t movingTable = countData + TranslatorMemory.size();// Расположение таблицы перемещающих имен
+    uint32_t movingTable = countData + InterpreterMemory.size();// Расположение таблицы перемещающих имен
     std::ofstream file(filename, std::ios::binary);
     if(!file)
     {
@@ -421,7 +421,7 @@ void Assembly::WriteBufferFile(std::string filename) {
             }
         }
         }
-    for (word code : TranslatorMemory) // Запись команд
+    for (word code : InterpreterMemory) // Запись команд
         {
         file.write((char*)&code, sizeof(code));
         }
@@ -443,8 +443,8 @@ void Assembly::Jump(uint16_t code, std::string arguments)
     {
         case Operands::label: // Переход на метку
         {
-            if(NameTable.find(args[0]) == NameTable.end()) throw std::logic_error(args[0] + " не определена");
-            NameTableCell variable = NameTable[args[0]];
+            if(Table_Of_Names.find(args[0]) == Table_Of_Names.end()) throw std::logic_error(args[0] + " не определена");
+            NameTableCell variable = Table_Of_Names[args[0]];
             if (variable.Op_Type == 0) // Является ли имя меткой
                 {
                 Command_register temp{};
@@ -680,8 +680,8 @@ void Assembly::Call(uint16_t code, std::string arguments)
         throw std::logic_error("Ожидался 1 аргумент");
     int argumentType = Type(args[0]);
     if(argumentType != Operands::label) throw std::logic_error("Ожидалась метка");
-    if (NameTable.find(args[0]) == NameTable.end()) throw std::logic_error(args[0] + " не определена");
-    if(NameTable[args[0]].Op_Type != 0)
+    if (Table_Of_Names.find(args[0]) == Table_Of_Names.end()) throw std::logic_error(args[0] + " не определена");
+    if(Table_Of_Names[args[0]].Op_Type != 0)
         throw std::logic_error("Ожидалась метка а не переменная");
     std::vector<word> value;
     Command_register temp{};
@@ -689,7 +689,7 @@ void Assembly::Call(uint16_t code, std::string arguments)
     temp.Cmd.s = 1;
     temp.Cmd.r1 = 0;
     temp.Cmd.r2 = 0;
-    temp.offset = NameTable[args[0]].Address;
+    temp.offset = Table_Of_Names[args[0]].Address;
     for (int i = 0; i < 4; ++i)
     {
         value.push_back(temp.data.d32[i]);
@@ -709,12 +709,12 @@ void Assembly::Translate(std::string filename) {
     }
     std::stringstream istr;
     istr << file.rdbuf();
-    FirstTranslate(istr);
+    FirstPass(istr);
     file.seekg(0);
     istr.clear();
     istr << file.rdbuf();
     globalAddress = CntrData + CntrCode;
-    Parse(istr);
+    SecondPass(istr);
 
 }
 
@@ -768,7 +768,7 @@ void Assembly::MoveRM(uint16_t code, std::string arguments)
         throw std::logic_error("Ожидалось 2 аргумента");
     bool Flag_LongReg = Check_RegSizeSingle(args, true); //если в команде встречены не короткие регистры
     Command_register temp{};
-    if (NameTable.find(args[1]) == NameTable.end())
+    if (Table_Of_Names.find(args[1]) == Table_Of_Names.end())
         throw std::logic_error(args[1] + " не определена");
     if (Flag_LongReg)
     {
@@ -776,7 +776,7 @@ void Assembly::MoveRM(uint16_t code, std::string arguments)
       temp.Cmd.s = 1;
       temp.Cmd.r1 = RCU32[args[0]];
       temp.Cmd.r2 = 0;
-      temp.offset = NameTable[args[1]].Address;
+      temp.offset = Table_Of_Names[args[1]].Address;
     }
     else
     {
@@ -784,7 +784,7 @@ void Assembly::MoveRM(uint16_t code, std::string arguments)
         temp.Cmd.s = 0;
         temp.Cmd.r1 = RCU16[args[0]];
         temp.Cmd.r2 = 0;
-        temp.offset = NameTable[args[1]].Address;
+        temp.offset = Table_Of_Names[args[1]].Address;
     }
     std::vector<word> value;
     for (int i = 0; i < 4; ++i)//Команда всегда 32 битная
@@ -802,7 +802,7 @@ void Assembly::MoveMR(uint16_t code, std::string arguments)
         throw std::logic_error("Ожидалось 2 аргумента");
     bool Flag_LongReg = Check_RegSizeSingle(args,false); //если в команде встречены не короткие регистры
     Command_register temp{};
-    if (NameTable.find(args[0]) == NameTable.end())
+    if (Table_Of_Names.find(args[0]) == Table_Of_Names.end())
         throw std::logic_error(args[0] + " не определена");
     if (Flag_LongReg)
     {
@@ -810,7 +810,7 @@ void Assembly::MoveMR(uint16_t code, std::string arguments)
         temp.Cmd.s = 1;
         temp.Cmd.r1 = RCU32[args[0]];
         temp.Cmd.r2 = 0;
-        temp.offset = NameTable[args[0]].Address;
+        temp.offset = Table_Of_Names[args[0]].Address;
     }
     else
     {
@@ -818,7 +818,7 @@ void Assembly::MoveMR(uint16_t code, std::string arguments)
         temp.Cmd.s = 0;
         temp.Cmd.r1 = RCU16[args[0]];
         temp.Cmd.r2 = 0;
-        temp.offset = NameTable[args[0]].Address;
+        temp.offset = Table_Of_Names[args[0]].Address;
     }
     std::vector<word> value;
     for (int i = 0; i < 4; ++i)//Команда всегда 32 битная

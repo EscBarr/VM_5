@@ -22,5 +22,5 @@ bool FloatParser::IsDoubleNum(const std::string &Num) {
         currentState = StateMatrix[charType][currentState]; // следующее состояние
         if (currentState == err) return false;
     }
-    return true;          // сюда попадаем только в состоянии finish;
+    return true; //Успешно обработано число
 }
