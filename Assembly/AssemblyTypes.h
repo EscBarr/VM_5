@@ -20,9 +20,9 @@ enum Operands {
   cnst,
   reg,
   lreg,
-  var,
+  label,
   indirect,
-  special,
+  modeinout,
   none
 };
 

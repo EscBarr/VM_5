@@ -14,6 +14,7 @@ void MOV_reg_reg::operator()(CPU &Cpu) noexcept {
         case 0://Для обмена 16 битных регистров
         {
 		  Cpu.RCU.RCU_16[Cpu.cur_command.Cmd.r1] = Cpu.RCU.RCU_16[Cpu.cur_command.Cmd.r2];
+		  break;
         }
         case 1://Для обмена 32 битных регистров
         {

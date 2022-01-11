@@ -33,7 +33,7 @@ bool LoaderBinFile::Load(CPU &Cpu,uint32_t startAdr, int Num_File)
             Cpu.RAM[currAdress] = code.data.d32[j];
             currAdress++;
         }
-        if (code.Cmd.s == 1 || code.Cmd.code == CPU::mov_reg_reg || code.Cmd.code == CPU::mov_reg_mem || code.Cmd.code == CPU::mov_mem_reg || code.Cmd.code == CPU::mov_adr_reg)
+        if (code.Cmd.s == 1 || code.Cmd.code == CPU::mov_reg_mem || code.Cmd.code == CPU::mov_mem_reg || code.Cmd.code == CPU::mov_adr_reg)
         {
             Program_list.read((char*)&code.data.d32[2], sizeof(data));
             Program_list.read((char*)&code.data.d32[3], sizeof(data));

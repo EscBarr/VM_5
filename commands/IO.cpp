@@ -26,9 +26,9 @@ void Out::operator()(CPU &Cpu) noexcept {
     {
         case 0: {
             if (type_for_display == 1) {
-                std::cout << Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).i16;
+                std::cout << Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).i16<< std::endl;
             } else {
-                std::cout << Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).ui16;
+                std::cout << Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r1).ui16<< std::endl;
             }
             Cpu.psw.set_IP(Cpu.psw.get_IP() + 2);
             break;
@@ -36,15 +36,15 @@ void Out::operator()(CPU &Cpu) noexcept {
         case 1: {
             switch (type_for_display) {
                 case 1: {
-                    std::cout << Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).i32;
+                    std::cout << Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).i32 << std::endl;
                     break;
                 }
                 case 2: {
-                    std::cout << Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).f;
+                    std::cout << Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).f<< std::endl;
                     break;
                 }
                 default: {
-                    std::cout << Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).u32;
+                    std::cout << Cpu.RCU.RCU_32.at(Cpu.cur_command.Cmd.r1).u32<< std::endl;
                     break;
                 }
             }

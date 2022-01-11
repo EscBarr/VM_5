@@ -35,7 +35,7 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
         }
         if (tempDataArray.size() == 3)
         {
-            if (Type(tempDataArray[0]) != Operands::var)
+            if (Type(tempDataArray[0]) != Operands::label)
                 throw std::logic_error(tempDataArray[0] + " неверный формат имени переменной");
             if (NameTable.find(tempDataArray[0]) != NameTable.end())
                 throw std::logic_error(tempDataArray[0] + " уже определена");
@@ -72,8 +72,8 @@ void Assembly::ParseDataSection(std::stringstream &istrstream)
                 else
                     throw std::logic_error(tempDataArray[2] + " Нераспознанное значение");
             }
-            else if (type[tempDataArray[1]] == DataType::Float)
-            {//Тип = Дробное
+            else if (type[tempDataArray[1]] == DataType::Float) //Тип = Вещественное
+            {
                 datatype32 data;
                 FloatParser myAtoi;
                 data.f = atof(tempDataArray[2].c_str());
@@ -170,8 +170,8 @@ Operands Assembly::Type(std::string str) {
             variable = false;
     }
     //if (NameTable.find(str) == NameTable.end()) // Проверка присутствует ли такая переменная
-    if (variable) return var;
-    if(str.find('#') != std::string::npos) return special;
+    if (variable) return label;
+    if(str.find('@') != std::string::npos) return modeinout;
     throw std::logic_error( str + " Неизвестный тип аргумента");
 
 }
@@ -213,7 +213,7 @@ void Assembly::ParseCodeSection(std::stringstream &istr) {
                     for (size_t i = 0; i < args.size(); i++)
                     {
                         int typeOp = Type(args[i]);
-                        if (typeOp == Operands::lreg || typeOp == Operands::var || typeOp == Operands::cnst)// Типы операндов, которые занимают дополнительную ячейку памяти ВМ
+                        if (typeOp == Operands::lreg || typeOp == Operands::label || typeOp == Operands::cnst)// Типы операндов, которые занимают дополнительную ячейку памяти ВМ
                             {
                             CntrCode +=2;
                             globalAddress+=2;
@@ -235,13 +235,6 @@ void Assembly::ParseCodeSection(std::stringstream &istr) {
         throw std::logic_error("Стартовая метка не найдена");
     }
     startLabel = NameTable["main"].Address;
-//    if(!isstartLabel) throw std::logic_error("Стартовая метка не найдена");
-//    if (NameTable.find(nameStartLabel) != NameTable.end())
-//    {
-//        if (NameTable[nameStartLabel].Op_Type != 0) throw std::logic_error(nameStartLabel + "не является меткой");
-//        startLabel = NameTable[nameStartLabel].Address;
-//    }
-//    else throw std::logic_error("Метка " + nameStartLabel + " не определена");
 
 }
 
@@ -262,7 +255,7 @@ void Assembly::ParseCommand(std::tuple<int, int> cmd, std::string arguments) {
         }
         case CommandList::move_adr_reg:
         {
-            MoveАR(std::get<0>(cmd), arguments); break;
+            MoveAR(std::get<0>(cmd), arguments); break;
         }
         case CommandList::jmp:
         {
@@ -286,7 +279,7 @@ void Assembly::ParseCommand(std::tuple<int, int> cmd, std::string arguments) {
             Call(std::get<0>(cmd), arguments);
             break;
         }
-        case CommandList::other:
+        case CommandList::other://Ret
         {
             Command_register temp;
             temp.Cmd.r1 = 15;
@@ -441,8 +434,58 @@ void Assembly::WriteBufferFile(std::string filename) {
 }
 
 
-void Assembly::Jump(uint16_t code, std::string arguments) {
-
+void Assembly::Jump(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    if(args.size() != 1) throw std::logic_error("Ожидался 1 аргумент");
+    int argumentType = Type(args[0]);
+    switch (argumentType)
+    {
+        case Operands::label: // Переход на метку
+        {
+            if(NameTable.find(args[0]) == NameTable.end()) throw std::logic_error(args[0] + " не определена");
+            NameTableCell variable = NameTable[args[0]];
+            if (variable.Op_Type == 0) // Является ли имя меткой
+                {
+                Command_register temp{};
+                temp.Cmd.code = code;
+                temp.Cmd.r1 = 0;//безусловный прямой переход по r1
+                temp.Cmd.s = 0; //прямой не относительный
+                temp.Cmd.r2 = 0;
+                temp.offset = variable.Address;
+                AddMovingName(globalAddress);
+                std::vector<word> value;
+                for (int i = 0; i < 4; ++i)
+                {
+                    value.push_back(temp.data.d32[i]);
+                }
+                WriteMem(value);
+                }
+            else
+                throw std::logic_error(args[0] + " не является меткой");
+            break;
+        }
+        case Operands::reg: // Косвенный адрес лежит в r2
+        {
+            Command_register temp{};
+            temp.Cmd.code = code;
+            temp.Cmd.r1 = 0;//безусловный прямой переход по r1
+            temp.Cmd.s = 0; //прямой не относительный
+            temp.Cmd.r2 = RCU16[args[0]];
+            std::vector<word> value;
+            for (int i = 0; i < 4; ++i)
+            {
+                value.push_back(temp.data.d32[i]);
+            }
+            WriteMem(value);
+            break;
+        }
+        default:
+        {
+            throw std::logic_error("Недоступный тип для совершения перехода (регистр или метка)");
+            break;
+        }
+    }
 }
 //Проверка размера регистров
 bool Assembly::Check_RegSize( std::vector<std::string> args)
@@ -456,7 +499,7 @@ bool Assembly::Check_RegSize( std::vector<std::string> args)
         {
         for (size_t i = 0; i < args.size(); i++)
         {
-            if (Type(args[i]) != Operands::lreg) throw std::logic_error("Арифметические команды возможны только на регистрах");;
+            if (Type(args[i]) != Operands::lreg) throw std::logic_error("Арифметические команды и сравнения возможны только на регистрах");;
         }
         }
     return Flag_LongReg;
@@ -506,7 +549,7 @@ void Assembly::Math(uint16_t code, std::string arguments)
         if (args.size() < 1) throw std::logic_error("Ожидалось не менее 1 аргумента");
         if (Flag_LongReg)//работа с 32 битными регистрами
             {
-            Command_register temp;
+            Command_register temp{};
             temp.Cmd.r1 = RCU32[args[0]];
             temp.Cmd.r2 = 0;
             temp.Cmd.s = 1;
@@ -555,16 +598,16 @@ void Assembly::IO(uint16_t code, std::string str)
         }
     }
 
-    if (Type(args[1]) != Operands::special) throw std::logic_error(args[1] + " Ожидалась конструкция #");
+    if (Type(args[1]) != Operands::modeinout) throw std::logic_error(args[1] + " Ожидалась спецсимвол @");
     int digitParam {0};
     if (isNumber(args[1].substr(1)))
     {
-        int digitParam = std::atoi(args[1].substr(1).c_str());
+        digitParam = std::atoi(args[1].substr(1).c_str());
         if (digitParam < 0 && digitParam > 2)
-            throw std::logic_error(args[1] + " Ожидалась конструкция #<0..2>");
+            throw std::logic_error(args[1] + " Ожидалась конструкция @<0..2>");
     }
     else
-        throw std::logic_error(args[1] + " Ожидалась конструкция #<0..2>");
+        throw std::logic_error(args[1] + " Ожидался спецсимвол @<0..2>");
     Command_register temp{};
     temp.Cmd.r1 = RCU16[args[0]];
     temp.Cmd.r2 = digitParam;
@@ -581,12 +624,79 @@ void Assembly::IO(uint16_t code, std::string str)
 
 }
 
-void Assembly::Cmp(uint16_t code, std::string arguments) {
+void Assembly::Cmp(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    if (args.size() < 2) throw std::logic_error("Ожидалось 2 аргумента");
+    Check_Operands(args);
+
+//    for (size_t i = 0; i < args.size(); i++)
+//    {
+//        if (Type(args[i]) != Operands::reg ||Type(args[i]) != Operands::lreg ) throw std::logic_error("Команды сравнения только на регистрах");
+//    }
+    bool Flag_LongReg =  Check_RegSize(args);;
+//    if (Type(args[0]) != Operands::reg )
+//    {
+//        if(Type(args[0]) != Operands::lreg)
+//        {
+//            throw std::logic_error(args[0] + " ожидался регистр");
+//        }
+//        else
+//        {
+//            Flag_LongReg = true;
+//        }
+//    }
+    std::vector<word> value;
+    Command_register temp{};
+    int size = 2;
+    if (Flag_LongReg)
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.r1 = RCU32[args[0]];
+        temp.Cmd.r2 = RCU32[args[1]];
+        temp.Cmd.s = 1;
+        size = 4;
+    }
+    else
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.r1 = RCU16[args[0]];
+        temp.Cmd.r2 = RCU16[args[1]];
+        temp.Cmd.s = 0;
+    }
+
+    for (int i = 0; i < size; ++i)
+    {
+        value.push_back(temp.data.d32[i]);
+    }
+    WriteMem(value);
 
 }
 
-void Assembly::Call(uint16_t code, std::string arguments) {
+void Assembly::Call(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    if(args.size() != 1)
+        throw std::logic_error("Ожидался 1 аргумент");
+    int argumentType = Type(args[0]);
+    if(argumentType != Operands::label) throw std::logic_error("Ожидалась метка");
+    if (NameTable.find(args[0]) == NameTable.end()) throw std::logic_error(args[0] + " не определена");
+    if(NameTable[args[0]].Op_Type != 0)
+        throw std::logic_error("Ожидалась метка а не переменная");
+    std::vector<word> value;
+    Command_register temp{};
+    temp.Cmd.code = code;
+    temp.Cmd.s = 1;
+    temp.Cmd.r1 = 0;
+    temp.Cmd.r2 = 0;
+    temp.offset = NameTable[args[0]].Address;
+    for (int i = 0; i < 4; ++i)
+    {
+        value.push_back(temp.data.d32[i]);
+    }
+    WriteMem(value);
 
+    AddMovingName(globalAddress);
 }
 
 void Assembly::Translate(std::string filename) {
@@ -620,7 +730,34 @@ bool Assembly::Check_Operands(std::vector<std::string> args) {
     return true;
 }
 
-void Assembly::MoveRR(uint16_t code, std::string arguments) {
+void Assembly::MoveRR(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    if(args.size() != 2)
+        throw std::logic_error("Ожидалось 2 аргумента");
+    Check_Operands(args);
+    bool Flag_LongReg = Check_RegSizeSingle(args, true); //если в команде встречены не короткие регистры
+    Command_register temp{};
+    if (Flag_LongReg)
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 1;
+        temp.Cmd.r1 = RCU32[args[0]];
+        temp.Cmd.r2 = RCU32[args[1]];
+    }
+    else
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 0;
+        temp.Cmd.r1 = RCU16[args[0]];
+        temp.Cmd.r2 = RCU16[args[1]];
+    }
+    std::vector<word> value;
+    for (int i = 0; i < 2; ++i)//Команда всегда 16 битная
+        {
+        value.push_back(temp.data.d32[i]);
+        }
+    WriteMem(value);
 
 }
 
@@ -629,7 +766,7 @@ void Assembly::MoveRM(uint16_t code, std::string arguments)
     std::vector<std::string> args = ParseArguments(arguments);
     if(args.size() != 2)
         throw std::logic_error("Ожидалось 2 аргумента");
-    bool Flag_LongReg = Check_RegSizeSingle(args); //если в команде встречены не короткие регистры
+    bool Flag_LongReg = Check_RegSizeSingle(args, true); //если в команде встречены не короткие регистры
     Command_register temp{};
     if (NameTable.find(args[1]) == NameTable.end())
         throw std::logic_error(args[1] + " не определена");
@@ -658,21 +795,81 @@ void Assembly::MoveRM(uint16_t code, std::string arguments)
 
 }
 
-void Assembly::MoveMR(uint16_t code, std::string arguments) {
+void Assembly::MoveMR(uint16_t code, std::string arguments)
+{
+    std::vector<std::string> args = ParseArguments(arguments);
+    if(args.size() != 2)
+        throw std::logic_error("Ожидалось 2 аргумента");
+    bool Flag_LongReg = Check_RegSizeSingle(args,false); //если в команде встречены не короткие регистры
+    Command_register temp{};
+    if (NameTable.find(args[0]) == NameTable.end())
+        throw std::logic_error(args[0] + " не определена");
+    if (Flag_LongReg)
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 1;
+        temp.Cmd.r1 = RCU32[args[0]];
+        temp.Cmd.r2 = 0;
+        temp.offset = NameTable[args[0]].Address;
+    }
+    else
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 0;
+        temp.Cmd.r1 = RCU16[args[0]];
+        temp.Cmd.r2 = 0;
+        temp.offset = NameTable[args[0]].Address;
+    }
+    std::vector<word> value;
+    for (int i = 0; i < 4; ++i)//Команда всегда 32 битная
+        {
+        value.push_back(temp.data.d32[i]);
+        }
+    WriteMem(value);
+}
+
+void Assembly::MoveAR(uint16_t code, std::string arguments) {
+    std::vector<std::string> args = ParseArguments(arguments);
+    if(args.size() != 2)
+        throw std::logic_error("Ожидалось 2 аргумента");
+    bool Flag_LongReg = Check_RegSizeSingle(args, true); //если в команде встречены не короткие регистры
+    Command_register temp{};
+    int adress = 0;
+    IntegerParser ParseAdr;
+    if (Flag_LongReg)
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 1;
+        temp.Cmd.r1 = RCU32[args[0]];
+        temp.Cmd.r2 = 0;
+        ParseAdr.InitializeNum(args[1],adress);
+        temp.offset = adress;
+    }
+    else
+    {
+        temp.Cmd.code = code;
+        temp.Cmd.s = 0;
+        temp.Cmd.r1 = RCU16[args[0]];
+        temp.Cmd.r2 = 0;
+        ParseAdr.InitializeNum(args[1],adress);
+        temp.offset = adress;
+    }
+    std::vector<word> value;
+    for (int i = 0; i < 4; ++i)//Команда всегда 32 битная
+        {
+        value.push_back(temp.data.d32[i]);
+        }
+    WriteMem(value);
 
 }
 
-void Assembly::MoveАR(uint16_t code, std::string arguments) {
-
-}
-
-bool Assembly::Check_RegSizeSingle(std::vector<std::string> args) {
+bool Assembly::Check_RegSizeSingle(std::vector<std::string> args,bool first_second) {
     bool Flag_LongReg = false;
-
-        if (Type(args[0]) != Operands::reg) Flag_LongReg = true;
+        int pos = first_second ? 0 : 1;
+        if (Type(args[pos]) != Operands::reg) Flag_LongReg = true;
         if(Flag_LongReg)
         {
-            if (Type(args[0]) != Operands::lreg)
+            if (Type(args[pos]) != Operands::lreg)
             {
                 throw std::logic_error("Для данной команды первый операнд должен быть регистром");
             }

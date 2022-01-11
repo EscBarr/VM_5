@@ -12,8 +12,7 @@ class Assembly {
 	  {"movRR", std::tuple<int, int>(CPU::mov_reg_reg, CommandList::move_reg_reg)},
 	  {"movRM", std::tuple<int, int>(CPU::mov_reg_mem, CommandList::move_reg_mem)},
 	  {"movMR", std::tuple<int, int>(CPU::mov_mem_reg, CommandList::move_mem_reg)},
-	  {"movАR", std::tuple<int, int>(CPU::mov_adr_reg, CommandList::move_adr_reg)},
-//  	{"lea",std::tuple<int,int>(CPU::move,CommandList::Lea)},
+	  {"movAR", std::tuple<int, int>(CPU::mov_adr_reg, CommandList::move_adr_reg)},
 	  {"add", std::tuple<int, int>(CPU::iadd, CommandList::math)},
 	  {"sub", std::tuple<int, int>(CPU::isub, CommandList::math)},
 	  {"mult", std::tuple<int, int>(CPU::imult, CommandList::math)},
@@ -83,7 +82,7 @@ class Assembly {
   // Перемещение (Регистр - память)
   void MoveMR(uint16_t code, std::string arguments);
   // Перемещение (Загрузка адреса в регистр)
-  void MoveАR(uint16_t code, std::string arguments);
+  void MoveAR(uint16_t code, std::string arguments);
   // Переходы
   void Jump(uint16_t code, std::string arguments);
   //Арифметика
@@ -111,7 +110,7 @@ class Assembly {
   //Проверка размера регистров
   bool Check_RegSize( std::vector<std::string> args);
   //Проверка размера регистра
-  bool Check_RegSizeSingle( std::vector<std::string> args);
+  bool Check_RegSizeSingle( std::vector<std::string> args,bool first_second);
  public:
   // Трансляция програмы
   void Translate(std::string filename);

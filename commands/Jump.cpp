@@ -21,7 +21,7 @@ void JumpDirect::set_ip(CPU &Cpu) {
 	  }
 	  break;
 	}
-	case 1:// Безусловный косвенный/относительный
+	case 1:// Безусловный косвенный
 	{
 	  Cpu.Check_reg(false);
 	  if (Cpu.cur_command.Cmd.s == 0) {
@@ -108,10 +108,10 @@ void Coditional_jump::operator()(CPU &Cpu) noexcept {
 
 void Call::operator()(CPU &Cpu) noexcept {
     Cpu.RCU.RCU_16.at(15).ui16 =
-            Cpu.psw.get_IP() + 1;//Сохраняем адрес после захода в подпрограмму в 16 регистр общего назначения
+            Cpu.psw.get_IP()+2;//Сохраняем адрес после захода в подпрограмму в 16 регистр общего назначения
     Cpu.Check_reg(false);//проверяем на правильность поле с вторым адресным регистром
-    //В поле команды второго регистра должен быть номер регистра,где хранится адрес начала подпрограммы
-    Cpu.psw.set_IP(Cpu.RCU.RCU_16.at(Cpu.cur_command.Cmd.r2).ui16);
+    //В смещении команды хранится адрес начала подпрограммы
+    Cpu.psw.set_IP(Cpu.cur_command.offset);
 }
 
 void Ret::operator()(CPU &Cpu) noexcept {
